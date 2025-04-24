@@ -3,9 +3,10 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import axios from 'axios';
 import IocsTab from './IocsTab';
 import { IoC, HuntingQuery } from '../types';
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 
 // Mock axios
-jest.mock('axios');
+vi.mock('axios');
 
 describe('IocsTab Component', () => {
   // Mock data for tests
@@ -29,10 +30,10 @@ describe('IocsTab Component', () => {
 
   beforeEach(() => {
     // Reset and setup axios mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     
     // Mock the reports API call
-    (axios.get as jest.Mock).mockImplementation((url: string) => {
+    (axios.get as any).mockImplementation((url: string) => {
       if (url === 'http://localhost:5000/api/reports') {
         return Promise.resolve({
           data: {
@@ -61,7 +62,7 @@ describe('IocsTab Component', () => {
     });
     
     // Mock the generate query POST call
-    (axios.post as jest.Mock).mockResolvedValue({
+    (axios.post as any).mockResolvedValue({
       data: {
         hunting_query: {
           id: 2,
@@ -78,7 +79,7 @@ describe('IocsTab Component', () => {
     });
     
     // Mock the delete query call
-    (axios.delete as jest.Mock).mockResolvedValue({
+    (axios.delete as any).mockResolvedValue({
       data: {
         message: 'Hunting query deleted successfully'
       }
@@ -198,7 +199,7 @@ describe('IocsTab Component', () => {
     });
     
     // Mock window.confirm to return true
-    window.confirm = jest.fn().mockImplementation(() => true);
+    window.confirm = vi.fn().mockImplementation(() => true);
     
     // Click the Delete button
     const deleteButton = screen.getByText('Delete');
