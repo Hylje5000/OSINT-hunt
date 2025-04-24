@@ -13,6 +13,7 @@ interface IocsTableRowProps {
   onDeleteQuery: (queryId: number, iocValue: string) => void;
   onGenerateQuery: (ioc: IoC) => void;
   generatingSingleQuery: boolean;
+  hasQuery: boolean; // New prop to indicate if this IoC already has a query
 }
 
 export const IocsTableRow: React.FC<IocsTableRowProps> = ({ 
@@ -24,7 +25,8 @@ export const IocsTableRow: React.FC<IocsTableRowProps> = ({
   iocQueries,
   onDeleteQuery,
   onGenerateQuery,
-  generatingSingleQuery
+  generatingSingleQuery,
+  hasQuery
 }) => (
   <React.Fragment>
     <tr className={`border-b border-border/50 hover:bg-muted/20 transition-colors ${expandedIoc === ioc.value ? 'bg-muted/30' : ''}`}>
@@ -87,6 +89,7 @@ export const IocsTableRow: React.FC<IocsTableRowProps> = ({
         onDeleteQuery={onDeleteQuery}
         onGenerateQuery={onGenerateQuery}
         generatingSingleQuery={generatingSingleQuery}
+        hasQuery={hasQuery}
       />
     )}
   </React.Fragment>

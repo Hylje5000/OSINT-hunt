@@ -14,6 +14,7 @@ interface IocsTableProps {
   onDeleteQuery: (queryId: number, iocValue: string) => void;
   onGenerateQuery: (ioc: IoC) => void;
   generatingSingleQuery: boolean;
+  iocsWithoutQueries: Set<string>; // New prop
 }
 
 export const IocsTable: React.FC<IocsTableProps> = ({ 
@@ -27,7 +28,8 @@ export const IocsTable: React.FC<IocsTableProps> = ({
   iocQueries,
   onDeleteQuery,
   onGenerateQuery,
-  generatingSingleQuery
+  generatingSingleQuery,
+  iocsWithoutQueries
 }) => (
   <div className="overflow-hidden rounded-lg border border-border/50 shadow-md glass-card">
     <div className="overflow-x-auto">
@@ -61,6 +63,7 @@ export const IocsTable: React.FC<IocsTableProps> = ({
               onDeleteQuery={onDeleteQuery}
               onGenerateQuery={onGenerateQuery}
               generatingSingleQuery={generatingSingleQuery}
+              hasQuery={!iocsWithoutQueries.has(ioc.value)}
             />
           ))}
         </tbody>

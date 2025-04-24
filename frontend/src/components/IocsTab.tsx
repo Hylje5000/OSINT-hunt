@@ -12,8 +12,8 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 // Helper function to fetch IoC queries (previously imported from IocComponents)
 const fetchIocQueries = async (iocValue: string): Promise<HuntingQuery[]> => {
   try {
-    const response = await axios.get(`${API_URL}/api/iocs/${encodeURIComponent(iocValue)}/queries`);
-    return response.data.queries || [];
+    const response = await axios.get(`${API_URL}/api/iocs/${encodeURIComponent(iocValue)}/hunting_queries`);
+    return response.data.hunting_queries || [];
   } catch (err) {
     console.error('Error fetching hunting queries:', err);
     return [];
@@ -31,6 +31,9 @@ const IocsTab: React.FC = () => {
   const [showSuccessMessage, setShowSuccessMessage] = useState<boolean>(false);
   const [iocQueries, setIocQueries] = useState<Record<string, HuntingQuery[]>>({});
   const [generatingSingleQuery, setGeneratingSingleQuery] = useState<boolean>(false);
+
+  // Track which IoCs can have queries generated (those without existing queries)
+  const [iocsWithoutQueries, setIocsWithoutQueries] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchAllIocs();
@@ -69,12 +72,37 @@ const IocsTab: React.FC = () => {
       // Convert to array
       const iocsArray = Object.values(uniqueIocs);
       setIocs(iocsArray);
+      
+      // Initialize the state of IoCs without queries
+      const iocValues = iocsArray.map(ioc => ioc.value);
+      await checkQueriesForAllIocs(iocValues);
+      
       setLoading(false);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError('Error fetching IoCs: ' + errorMessage);
       setLoading(false);
     }
+  };
+
+  // Check which IoCs don't have hunting queries
+  const checkQueriesForAllIocs = async (iocValues: string[]): Promise<void> => {
+    const withoutQueries = new Set<string>();
+    
+    // For performance, we fetch queries in batches or for specific IoCs only when needed
+    for (const iocValue of iocValues) {
+      const queries = await fetchIocQueries(iocValue);
+      setIocQueries(prev => ({
+        ...prev,
+        [iocValue]: queries
+      }));
+      
+      if (queries.length === 0) {
+        withoutQueries.add(iocValue);
+      }
+    }
+    
+    setIocsWithoutQueries(withoutQueries);
   };
 
   // Fetch hunting queries for a specific IoC and update state
@@ -85,6 +113,17 @@ const IocsTab: React.FC = () => {
         ...prev,
         [iocValue]: queries
       }));
+      
+      // Update the set of IoCs without queries
+      setIocsWithoutQueries(prev => {
+        const newSet = new Set(prev);
+        if (queries.length === 0) {
+          newSet.add(iocValue);
+        } else {
+          newSet.delete(iocValue);
+        }
+        return newSet;
+      });
     } catch (err) {
       console.error('Error fetching hunting queries for IoC:', err);
     }
@@ -92,6 +131,12 @@ const IocsTab: React.FC = () => {
 
   // Generate hunting query for a single IoC
   const generateSingleIocQuery = async (ioc: IoC): Promise<void> => {
+    // Check if IoC already has queries
+    if (iocQueries[ioc.value] && iocQueries[ioc.value].length > 0) {
+      // IoC already has a query, just return without generating
+      return;
+    }
+
     try {
       setGeneratingSingleQuery(true);
       setError(null);
@@ -158,23 +203,43 @@ const IocsTab: React.FC = () => {
       return;
     }
 
+    // Filter selected IoCs to only include those without queries
+    const iocsToGenerate = selectedIocs.filter(ioc => iocsWithoutQueries.has(ioc.value));
+
+    if (iocsToGenerate.length === 0) {
+      setError('All selected IoCs already have hunting queries.');
+      return;
+    }
+
     try {
       setGeneratingQuery(true);
       setError(null);
       
       const response = await axios.post(`${API_URL}/api/iocs/generate_queries`, {
-        iocs: selectedIocs,
+        iocs: iocsToGenerate, // Only generate for IoCs without queries
         save: true,
-        generate_individual_queries: true, // Generate queries for each IoC individually
-        query_name: `Generated Query for ${selectedIocs.length} IoCs - ${new Date().toLocaleString()}`,
+        generate_individual_queries: true,
+        query_name: `Generated Query for ${iocsToGenerate.length} IoCs - ${new Date().toLocaleString()}`,
         description: `Automatically generated hunting query for selected IoCs`
       });
       
       setShowSuccessMessage(true);
       
       // Refresh queries for expanded IoC if it's in the selected list
-      if (expandedIoc && selectedIocs.some(ioc => ioc.value === expandedIoc)) {
+      if (expandedIoc && iocsToGenerate.some(ioc => ioc.value === expandedIoc)) {
         fetchIocQueriesForState(expandedIoc);
+      }
+      
+      // Update iocsWithoutQueries to reflect newly generated queries
+      setIocsWithoutQueries(prev => {
+        const newSet = new Set(prev);
+        iocsToGenerate.forEach(ioc => newSet.delete(ioc.value));
+        return newSet;
+      });
+      
+      // Update iocQueries for all newly generated queries
+      for (const ioc of iocsToGenerate) {
+        fetchIocQueriesForState(ioc.value);
       }
       
       // Hide success message after 5 seconds
@@ -203,6 +268,11 @@ const IocsTab: React.FC = () => {
         const updatedQueries = { ...prev };
         if (updatedQueries[iocValue]) {
           updatedQueries[iocValue] = updatedQueries[iocValue].filter(q => q.id !== queryId);
+          
+          // If this was the last query, add the IoC back to the set of IoCs without queries
+          if (updatedQueries[iocValue].length === 0) {
+            setIocsWithoutQueries(prev => new Set(prev).add(iocValue));
+          }
         }
         return updatedQueries;
       });
@@ -239,7 +309,7 @@ const IocsTab: React.FC = () => {
         <div className="md:ml-4">
           <Button 
             className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 shadow-sm"
-            disabled={selectedIocs.length === 0 || generatingQuery}
+            disabled={selectedIocs.length === 0 || generatingQuery || !selectedIocs.some(ioc => iocsWithoutQueries.has(ioc.value))}
             onClick={generateHuntingQueries}
           >
             {generatingQuery ? (
@@ -255,7 +325,7 @@ const IocsTab: React.FC = () => {
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                 </svg>
-                Generate Hunting Queries ({selectedIocs.length})
+                Generate Hunting Queries ({selectedIocs.filter(ioc => iocsWithoutQueries.has(ioc.value)).length})
               </>
             )}
           </Button>
@@ -313,6 +383,7 @@ const IocsTab: React.FC = () => {
                 onDeleteQuery={deleteQuery}
                 onGenerateQuery={generateSingleIocQuery}
                 generatingSingleQuery={generatingSingleQuery}
+                iocsWithoutQueries={iocsWithoutQueries}
               />
             </div>
           )}
