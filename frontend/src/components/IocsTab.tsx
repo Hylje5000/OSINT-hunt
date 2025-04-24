@@ -1,16 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import {
-  IocsFilter,
-  StatusMessage,
-  IocsTable,
-  fetchIocQueries
-} from './IocComponents';
+import { IocsFilter } from './ioc/IocsFilter';
+import { StatusMessage } from './ioc/StatusMessage';
+import { IocsTable } from './ioc/IocsTable';
 import { IoC, HuntingQuery, Report } from '../types';
 import { Button } from './ui/button';
 
 // Get API URL from environment variable or use default
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+// Helper function to fetch IoC queries (previously imported from IocComponents)
+const fetchIocQueries = async (iocValue: string): Promise<HuntingQuery[]> => {
+  try {
+    const response = await axios.get(`${API_URL}/api/iocs/${encodeURIComponent(iocValue)}/queries`);
+    return response.data.queries || [];
+  } catch (err) {
+    console.error('Error fetching hunting queries:', err);
+    return [];
+  }
+};
 
 const IocsTab: React.FC = () => {
   const [iocs, setIocs] = useState<IoC[]>([]);
