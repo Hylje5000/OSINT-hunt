@@ -1,31 +1,34 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
 import ReportCard from './components/ReportCard';
 import IocsTab from './components/IocsTab';
+import { Report } from './types';
 
 // Get API URL from environment variable or use default
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-function App() {
-  const [reports, setReports] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('iocs'); // Default tab is IoCs, can be 'iocs' or 'reports'
+function App(): React.ReactElement {
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'iocs' | 'reports'>('iocs'); // Default tab is IoCs, can be 'iocs' or 'reports'
 
   useEffect(() => {
     // Fetch reports from the backend API
-    const fetchReports = async () => {
+    const fetchReports = async (): Promise<void> => {
       try {
         setLoading(true);
         const response = await axios.get(`${API_URL}/api/reports`);
         setReports(response.data.reports);
         setLoading(false);
       } catch (err) {
-        setError('Error fetching reports: ' + err.message);
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        setError('Error fetching reports: ' + errorMessage);
         setLoading(false);
       }
     };
+    
     fetchReports();
   }, []);
 

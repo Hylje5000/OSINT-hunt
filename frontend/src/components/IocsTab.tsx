@@ -7,21 +7,22 @@ import {
   fetchIocQueries
 } from './IocComponents';
 import './IocsTab.css';
+import { IoC, HuntingQuery, Report } from '../types';
 
 // Get API URL from environment variable or use default
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-const IocsTab = () => {
-  const [iocs, setIocs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [expandedIoc, setExpandedIoc] = useState(null);
-  const [filterType, setFilterType] = useState('all');
-  const [selectedIocs, setSelectedIocs] = useState([]);
-  const [generatingQuery, setGeneratingQuery] = useState(false);
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-  const [iocQueries, setIocQueries] = useState({});
-  const [generatingSingleQuery, setGeneratingSingleQuery] = useState(false);
+const IocsTab: React.FC = () => {
+  const [iocs, setIocs] = useState<IoC[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [expandedIoc, setExpandedIoc] = useState<string | null>(null);
+  const [filterType, setFilterType] = useState<string>('all');
+  const [selectedIocs, setSelectedIocs] = useState<IoC[]>([]);
+  const [generatingQuery, setGeneratingQuery] = useState<boolean>(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState<boolean>(false);
+  const [iocQueries, setIocQueries] = useState<Record<string, HuntingQuery[]>>({});
+  const [generatingSingleQuery, setGeneratingSingleQuery] = useState<boolean>(false);
 
   useEffect(() => {
     fetchAllIocs();
@@ -35,20 +36,20 @@ const IocsTab = () => {
   }, [expandedIoc]);
 
   // Fetch all IoCs from reports
-  const fetchAllIocs = async () => {
+  const fetchAllIocs = async (): Promise<void> => {
     try {
       setLoading(true);
       
       // First fetch all reports
       const reportsResponse = await axios.get(`${API_URL}/api/reports`);
-      const reports = reportsResponse.data.reports;
+      const reports = reportsResponse.data.reports as Report[];
       
       // Extract unique IoCs from all reports
-      const uniqueIocs = {};
+      const uniqueIocs: Record<string, IoC> = {};
       
-      reports.forEach(report => {
+      reports.forEach((report: Report) => {
         if (report.iocs && Array.isArray(report.iocs)) {
-          report.iocs.forEach(ioc => {
+          report.iocs.forEach((ioc: IoC) => {
             // Use the IoC value as a unique key
             if (!uniqueIocs[ioc.value]) {
               uniqueIocs[ioc.value] = ioc;
@@ -62,13 +63,14 @@ const IocsTab = () => {
       setIocs(iocsArray);
       setLoading(false);
     } catch (err) {
-      setError('Error fetching IoCs: ' + err.message);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      setError('Error fetching IoCs: ' + errorMessage);
       setLoading(false);
     }
   };
 
   // Fetch hunting queries for a specific IoC and update state
-  const fetchIocQueriesForState = async (iocValue) => {
+  const fetchIocQueriesForState = async (iocValue: string): Promise<void> => {
     try {
       const queries = await fetchIocQueries(iocValue);
       setIocQueries(prev => ({
@@ -81,7 +83,7 @@ const IocsTab = () => {
   };
 
   // Generate hunting query for a single IoC
-  const generateSingleIocQuery = async (ioc) => {
+  const generateSingleIocQuery = async (ioc: IoC): Promise<void> => {
     try {
       setGeneratingSingleQuery(true);
       setError(null);
@@ -102,14 +104,15 @@ const IocsTab = () => {
       }, 3000);
       
     } catch (err) {
-      setError(`Error generating query for ${ioc.value}: ${err.response?.data?.error || err.message}`);
+      const axiosError = err as any;
+      setError(`Error generating query for ${ioc.value}: ${axiosError.response?.data?.error || (err instanceof Error ? err.message : 'Unknown error')}`);
     } finally {
       setGeneratingSingleQuery(false);
     }
   };
 
   // Handle expanding an IoC row
-  const toggleExpand = (iocValue) => {
+  const toggleExpand = (iocValue: string): void => {
     if (expandedIoc === iocValue) {
       setExpandedIoc(null);
     } else {
@@ -118,7 +121,7 @@ const IocsTab = () => {
   };
 
   // Handle IoC selection
-  const toggleIocSelection = (ioc) => {
+  const toggleIocSelection = (ioc: IoC): void => {
     setSelectedIocs(prevSelected => {
       const isSelected = prevSelected.some(selected => selected.value === ioc.value);
       if (isSelected) {
@@ -130,7 +133,7 @@ const IocsTab = () => {
   };
 
   // Handle select all IoCs
-  const toggleSelectAll = () => {
+  const toggleSelectAll = (): void => {
     if (selectedIocs.length === filteredIocs.length) {
       // Deselect all
       setSelectedIocs([]);
@@ -141,7 +144,7 @@ const IocsTab = () => {
   };
 
   // Generate hunting queries for selected IoCs
-  const generateHuntingQueries = async () => {
+  const generateHuntingQueries = async (): Promise<void> => {
     if (selectedIocs.length === 0) {
       setError('Please select at least one IoC to generate hunting queries.');
       return;
@@ -171,14 +174,15 @@ const IocsTab = () => {
         setShowSuccessMessage(false);
       }, 5000);
     } catch (err) {
-      setError('Error generating hunting queries: ' + (err.response?.data?.error || err.message));
+      const axiosError = err as any;
+      setError('Error generating hunting queries: ' + (axiosError.response?.data?.error || (err instanceof Error ? err.message : 'Unknown error')));
     } finally {
       setGeneratingQuery(false);
     }
   };
 
   // Delete a hunting query
-  const deleteQuery = async (queryId, iocValue) => {
+  const deleteQuery = async (queryId: number, iocValue: string): Promise<void> => {
     if (!window.confirm('Are you sure you want to delete this hunting query?')) {
       return;
     }
@@ -195,12 +199,13 @@ const IocsTab = () => {
         return updatedQueries;
       });
     } catch (err) {
-      setError('Error deleting query: ' + err.message);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      setError('Error deleting query: ' + errorMessage);
     }
   };
 
   // Get unique IoC types for filtering
-  const iocTypes = ['all', ...new Set(iocs.map(ioc => ioc.type || 'unknown'))];
+  const iocTypes = ['all', ...Array.from(new Set(iocs.map(ioc => ioc.type || 'unknown')))];
 
   // Filter IoCs by type
   const filteredIocs = filterType === 'all' 

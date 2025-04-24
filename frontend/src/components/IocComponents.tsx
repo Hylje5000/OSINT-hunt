@@ -1,26 +1,33 @@
 import React from 'react';
 import axios from 'axios';
 import './IocsTab.css';
+import { IoC, HuntingQuery } from '../types';
 
 // Get API URL from environment variable or use default
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 // Format hunting query to properly display line breaks
-const formatQueryText = (queryText) => {
+const formatQueryText = (queryText: string): string => {
   if (!queryText) return '';
   // Replace literal \n strings with actual line breaks
   return queryText.replace(/\\n/g, '\n');
 };
 
 // Format date for display
-const formatDate = (dateString) => {
+const formatDate = (dateString: string): string => {
   if (!dateString) return 'Unknown date';
   const date = new Date(dateString);
   return date.toLocaleString();
 };
 
 // IoC Filter Component
-export const IocsFilter = ({ filterType, setFilterType, iocTypes }) => (
+interface IocsFilterProps {
+  filterType: string;
+  setFilterType: (type: string) => void;
+  iocTypes: string[];
+}
+
+export const IocsFilter: React.FC<IocsFilterProps> = ({ filterType, setFilterType, iocTypes }) => (
   <div className="iocs-controls">
     <div className="iocs-filter">
       <label htmlFor="type-filter">Filter by type: </label>
@@ -40,7 +47,13 @@ export const IocsFilter = ({ filterType, setFilterType, iocTypes }) => (
 );
 
 // IoC Status Message Component
-export const StatusMessage = ({ loading, error, showSuccessMessage }) => (
+interface StatusMessageProps {
+  loading: boolean;
+  error: string | null;
+  showSuccessMessage: boolean;
+}
+
+export const StatusMessage: React.FC<StatusMessageProps> = ({ loading, error, showSuccessMessage }) => (
   <>
     {loading && <p className="loading-message">Loading IoCs...</p>}
     {error && <p className="error-message">{error}</p>}
@@ -53,7 +66,13 @@ export const StatusMessage = ({ loading, error, showSuccessMessage }) => (
 );
 
 // Hunting Query Item Component
-export const HuntingQueryItem = ({ query, iocValue, onDelete }) => (
+interface HuntingQueryItemProps {
+  query: HuntingQuery;
+  iocValue: string;
+  onDelete: (queryId: number, iocValue: string) => void;
+}
+
+export const HuntingQueryItem: React.FC<HuntingQueryItemProps> = ({ query, iocValue, onDelete }) => (
   <div className="hunting-query-item" key={query.id}>
     <div className="query-header">
       <h5>{query.name}</h5>
@@ -72,7 +91,15 @@ export const HuntingQueryItem = ({ query, iocValue, onDelete }) => (
 );
 
 // Hunting Queries List Component
-export const HuntingQueries = ({ 
+interface HuntingQueriesProps {
+  ioc: IoC;
+  iocQueries: Record<string, HuntingQuery[]>;
+  onDelete: (queryId: number, iocValue: string) => void;
+  onGenerateQuery: (ioc: IoC) => void;
+  generatingSingleQuery: boolean;
+}
+
+export const HuntingQueries: React.FC<HuntingQueriesProps> = ({ 
   ioc, 
   iocQueries, 
   onDelete, 
@@ -111,7 +138,15 @@ export const HuntingQueries = ({
 );
 
 // IoC Details Component
-export const IocDetails = ({ 
+interface IocDetailsProps {
+  ioc: IoC;
+  iocQueries: Record<string, HuntingQuery[]>;
+  onDeleteQuery: (queryId: number, iocValue: string) => void;
+  onGenerateQuery: (ioc: IoC) => void;
+  generatingSingleQuery: boolean;
+}
+
+export const IocDetails: React.FC<IocDetailsProps> = ({ 
   ioc, 
   iocQueries, 
   onDeleteQuery, 
@@ -119,7 +154,7 @@ export const IocDetails = ({
   generatingSingleQuery 
 }) => (
   <tr className="details-row">
-    <td colSpan="5">
+    <td colSpan={5}>
       <div className="ioc-details">
         <HuntingQueries 
           ioc={ioc}
@@ -134,7 +169,19 @@ export const IocDetails = ({
 );
 
 // IoC Table Row Component
-export const IocsTableRow = ({ 
+interface IocsTableRowProps {
+  ioc: IoC;
+  expandedIoc: string | null;
+  toggleExpand: (iocValue: string) => void;
+  selectedIocs: IoC[];
+  toggleIocSelection: (ioc: IoC) => void;
+  iocQueries: Record<string, HuntingQuery[]>;
+  onDeleteQuery: (queryId: number, iocValue: string) => void;
+  onGenerateQuery: (ioc: IoC) => void;
+  generatingSingleQuery: boolean;
+}
+
+export const IocsTableRow: React.FC<IocsTableRowProps> = ({ 
   ioc, 
   expandedIoc, 
   toggleExpand, 
@@ -157,7 +204,7 @@ export const IocsTableRow = ({
       <td className="ioc-value">{ioc.value}</td>
       <td className="ioc-type">
         <span className="type-badge">
-          {ioc.type_name || ioc.type}
+          {(ioc as any).type_name || ioc.type}
         </span>
       </td>
       <td className="ioc-description">
@@ -185,7 +232,21 @@ export const IocsTableRow = ({
 );
 
 // IoCs Table Component
-export const IocsTable = ({ 
+interface IocsTableProps {
+  filteredIocs: IoC[];
+  expandedIoc: string | null;
+  toggleExpand: (iocValue: string) => void;
+  selectedIocs: IoC[];
+  toggleIocSelection: (ioc: IoC) => void;
+  allFilteredSelected: boolean;
+  toggleSelectAll: () => void;
+  iocQueries: Record<string, HuntingQuery[]>;
+  onDeleteQuery: (queryId: number, iocValue: string) => void;
+  onGenerateQuery: (ioc: IoC) => void;
+  generatingSingleQuery: boolean;
+}
+
+export const IocsTable: React.FC<IocsTableProps> = ({ 
   filteredIocs, 
   expandedIoc, 
   toggleExpand, 
@@ -236,7 +297,7 @@ export const IocsTable = ({
 );
 
 // Helper functions that can be exported for reuse
-export const fetchIocQueries = async (iocValue) => {
+export const fetchIocQueries = async (iocValue: string): Promise<HuntingQuery[]> => {
   try {
     const response = await axios.get(`${API_URL}/api/iocs/${encodeURIComponent(iocValue)}/hunting_queries`);
     return response.data.hunting_queries;

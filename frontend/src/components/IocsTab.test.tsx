@@ -1,19 +1,20 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import axios from 'axios';
-import IocsTab from '../IocsTab';
+import IocsTab from './IocsTab';
+import { IoC, HuntingQuery } from '../types';
 
 // Mock axios
 jest.mock('axios');
 
 describe('IocsTab Component', () => {
   // Mock data for tests
-  const mockIocs = [
+  const mockIocs: IoC[] = [
     { value: 'example.com', type: 'domain', description: 'Example domain' },
     { value: '192.168.1.1', type: 'ip_address', description: 'Example IP' }
   ];
   
-  const mockQueries = [
+  const mockQueries: HuntingQuery[] = [
     {
       id: 1,
       name: 'Test Query 1',
@@ -21,7 +22,8 @@ describe('IocsTab Component', () => {
       query_text: 'SecurityEvent | where Computer contains "example.com"',
       ioc_value: 'example.com',
       ioc_type: 'domain',
-      created_at: '2023-01-01T12:00:00'
+      created_at: '2023-01-01T12:00:00',
+      updated_at: '2023-01-01T12:00:00'
     }
   ];
 
@@ -30,7 +32,7 @@ describe('IocsTab Component', () => {
     jest.clearAllMocks();
     
     // Mock the reports API call
-    axios.get.mockImplementation((url) => {
+    (axios.get as jest.Mock).mockImplementation((url: string) => {
       if (url === 'http://localhost:5000/api/reports') {
         return Promise.resolve({
           data: {
@@ -38,7 +40,10 @@ describe('IocsTab Component', () => {
               { 
                 id: 1, 
                 name: 'Test Report', 
-                iocs: mockIocs
+                iocs: mockIocs,
+                source: 'Test Source',
+                created_at: '2023-01-01T12:00:00',
+                updated_at: '2023-01-01T12:00:00'
               }
             ]
           }
@@ -56,21 +61,24 @@ describe('IocsTab Component', () => {
     });
     
     // Mock the generate query POST call
-    axios.post.mockResolvedValue({
+    (axios.post as jest.Mock).mockResolvedValue({
       data: {
         hunting_query: {
           id: 2,
           name: 'Generated Query',
           query_text: 'SecurityEvent | where Computer contains "example.com"',
           ioc_value: 'example.com',
-          ioc_type: 'domain'
+          ioc_type: 'domain',
+          query_type: 'kql',
+          created_at: '2023-01-01T12:00:00',
+          updated_at: '2023-01-01T12:00:00'
         },
         message: 'Hunting query generated and saved successfully'
       }
     });
     
     // Mock the delete query call
-    axios.delete.mockResolvedValue({
+    (axios.delete as jest.Mock).mockResolvedValue({
       data: {
         message: 'Hunting query deleted successfully'
       }

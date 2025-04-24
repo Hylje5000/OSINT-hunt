@@ -1,6 +1,15 @@
 import React from 'react';
 
-const ItemCard = ({ item }) => {
+interface Item {
+  name: string;
+  description: string;
+}
+
+interface ItemCardProps {
+  item: Item;
+}
+
+const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
   return (
     <div className="item-card">
       <h3>{item.name}</h3>

@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
 import './ReportCard.css';
+import { Report } from '../types';
 
-const ReportCard = ({ report }) => {
-  const [showDetails, setShowDetails] = useState(false);
+interface ReportCardProps {
+  report: Report;
+}
+
+const ReportCard: React.FC<ReportCardProps> = ({ report }) => {
+  const [showDetails, setShowDetails] = useState<boolean>(false);
 
   return (
     <div className="report-card">
