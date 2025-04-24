@@ -18,10 +18,11 @@ def create_app(config_class=Config):
     CORS(app)  # Enable CORS for all routes
     db.init_app(app)
     
-    # Create tables if they don't exist
-    with app.app_context():
-        db.create_all()
-        create_example_data()
+    # Create tables if they don't exist - but only in non-testing mode
+    if not app.config.get('TESTING', False):
+        with app.app_context():
+            db.create_all()
+            create_example_data()
     
     # API Routes
     @app.route('/api/health', methods=['GET'])
@@ -350,6 +351,16 @@ def create_app(config_class=Config):
         if not ioc_type:
             return jsonify({"error": "Missing required field: ioc_type"}), 400
         
+        # Check if a hunting query already exists for this IoC
+        existing_queries = HuntingQuery.find_by_ioc_value(ioc_value)
+        if existing_queries:
+            # Return the existing query instead of creating a new one
+            return jsonify({
+                "hunting_query": existing_queries[0].to_dict(),
+                "message": "Hunting query already exists for this IoC",
+                "exists": True
+            })
+        
         # Extract parameters
         query_name = data.get('query_name', f"Hunting Query for {ioc_type} '{ioc_value}' - {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}")
         description = data.get('description', f"Automatically generated hunting query for {ioc_type} IoC: {ioc_value}")
@@ -384,7 +395,8 @@ def create_app(config_class=Config):
         
         return jsonify({
             "hunting_query": new_query.to_dict(),
-            "message": "Hunting query generated and saved successfully"
+            "message": "Hunting query generated and saved successfully",
+            "exists": False
         })
     
     @app.route('/api/iocs/generate_queries', methods=['POST'])
@@ -439,11 +451,22 @@ def create_app(config_class=Config):
         # Generate individual queries for each IoC if requested
         saved_queries = []
         individual_queries = {}
+        skipped_iocs = []
         
         if generate_individual:
             for ioc in iocs_data:
                 ioc_value = ioc['value']
                 ioc_type = ioc['type']
+                
+                # Check if a hunting query already exists for this IoC
+                existing_queries = HuntingQuery.find_by_ioc_value(ioc_value)
+                if existing_queries and save_query:
+                    # Skip creating a new query for this IoC
+                    skipped_iocs.append({
+                        "value": ioc_value,
+                        "query": existing_queries[0].to_dict()
+                    })
+                    continue
                 
                 # Generate and potentially save a query for this specific IoC
                 ioc_query = generate_query(ioc_value, time_range=time_range, limit=limit)
@@ -518,6 +541,10 @@ def create_app(config_class=Config):
             
         if individual_queries:
             response["individual_queries"] = individual_queries
+            
+        if skipped_iocs:
+            response["skipped_iocs"] = skipped_iocs
+            response["message"] += f", skipped {len(skipped_iocs)} IoCs that already had queries"
         
         return jsonify(response)
     
@@ -574,11 +601,22 @@ def create_app(config_class=Config):
         # Generate individual queries for each IoC if requested
         saved_queries = []
         individual_queries = {}
+        skipped_iocs = []
         
         if generate_individual:
             for ioc in selected_iocs:
                 ioc_value = ioc['value']
                 ioc_type = ioc['type']
+                
+                # Check if a hunting query already exists for this IoC
+                existing_queries = HuntingQuery.find_by_ioc_value(ioc_value)
+                if existing_queries and save_query:
+                    # Skip creating a new query for this IoC
+                    skipped_iocs.append({
+                        "value": ioc_value,
+                        "query": existing_queries[0].to_dict()
+                    })
+                    continue
                 
                 # Generate and potentially save a query for this specific IoC
                 ioc_query = generate_query(ioc_value, time_range=time_range, limit=limit)
@@ -652,6 +690,10 @@ def create_app(config_class=Config):
             
         if individual_queries:
             response["individual_queries"] = individual_queries
+
+        if skipped_iocs:
+            response["skipped_iocs"] = skipped_iocs
+            response["message"] += f", skipped {len(skipped_iocs)} IoCs that already had queries"
             
         return jsonify(response)
     
@@ -667,9 +709,9 @@ def create_app(config_class=Config):
     
     return app
 
-# Create the application instance
-app = create_app()
-
+# Only create the application instance when running this file directly
 if __name__ == '__main__':
+    # Create the app instance
+    app = create_app()
     # Bind to 0.0.0.0 to make the app accessible outside the container
     app.run(debug=True, host='0.0.0.0', port=5000)

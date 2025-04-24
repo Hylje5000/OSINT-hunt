@@ -3,46 +3,9 @@ Tests for the Hunting Queries API endpoints.
 """
 import json
 import pytest
-from app import create_app
-from models import db, Report, HuntingQuery
-from config import TestConfig
+from models import db, HuntingQuery
 
-
-@pytest.fixture
-def app():
-    """Create and configure a Flask app for testing"""
-    app = create_app(TestConfig)
-    with app.app_context():
-        db.create_all()
-        yield app
-        db.session.remove()
-        db.drop_all()
-
-
-@pytest.fixture
-def client(app):
-    """A test client for the app"""
-    return app.test_client()
-
-
-@pytest.fixture
-def test_data(app):
-    """Create test data for the tests"""
-    with app.app_context():
-        # Create a test report
-        report = Report(name="Test Report", source="Unit Test")
-        
-        # Add some IoCs to the report
-        report.set_iocs([
-            {"type": "domain", "value": "example.com", "description": "Test domain"},
-            {"type": "ip_address", "value": "192.168.1.1", "description": "Test IP"}
-        ])
-        
-        db.session.add(report)
-        db.session.commit()
-        
-        return {"report_id": report.id}
-
+# No need to import fixtures here - they're imported automatically from conftest.py
 
 def test_generate_ioc_query(client, test_data):
     """Test generating a hunting query for a specific IoC value"""
@@ -189,3 +152,47 @@ def test_delete_hunting_query(client, app):
     with app.app_context():
         deleted_query = HuntingQuery.query.get(query_id)
         assert deleted_query is None
+
+# Add new test for the duplicate prevention feature
+def test_prevent_duplicate_hunting_queries(client, app):
+    """Test that the API prevents creating duplicate hunting queries for the same IoC"""
+    ioc_value = "malicious.example.com"
+    
+    # First, create a query for this IoC
+    payload = {
+        "ioc_type": "domain",
+        "query_name": "First Query",
+        "description": "First query for this IoC"
+    }
+    
+    # Create the first query
+    response1 = client.post(f'/api/iocs/{ioc_value}/generate_query', 
+                         json=payload,
+                         content_type='application/json')
+    
+    assert response1.status_code == 200
+    data1 = json.loads(response1.data)
+    assert data1["exists"] == False
+    assert "hunting_query" in data1
+    
+    # Try to create a second query for the same IoC
+    payload["query_name"] = "Second Query"
+    response2 = client.post(f'/api/iocs/{ioc_value}/generate_query', 
+                         json=payload,
+                         content_type='application/json')
+    
+    assert response2.status_code == 200
+    data2 = json.loads(response2.data)
+    
+    # It should indicate the query already exists
+    assert data2["exists"] == True
+    assert "hunting_query" in data2
+    
+    # Verify that the query in the response is the first one we created
+    assert data2["hunting_query"]["name"] == "First Query"
+    
+    # Verify only one query exists in the database for this IoC
+    with app.app_context():
+        queries = HuntingQuery.query.filter_by(ioc_value=ioc_value).all()
+        assert len(queries) == 1
+        assert queries[0].name == "First Query"
