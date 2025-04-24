@@ -217,16 +217,39 @@ const IocsTab: React.FC = () => {
     filteredIocs.every(ioc => selectedIocs.some(selected => selected.value === ioc.value));
 
   return (
-    <div className="p-5">
-      <div className="flex justify-between items-center mb-5">
-        <h2 className="text-xl font-semibold text-foreground m-0">Indicators of Compromise (IoCs)</h2>
-        <div className="ml-4">
+    <div className="p-5 space-y-6">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-5">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-2xl font-bold text-foreground m-0 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-accent" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v-1l1-1 1-1-.257-.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clipRule="evenodd" />
+            </svg>
+            Indicators of Compromise (IoCs)
+          </h2>
+          <p className="text-muted-foreground m-0">Analyze and generate hunting queries for indicators of compromise.</p>
+        </div>
+        <div className="md:ml-4">
           <Button 
-            className="bg-green-600 hover:bg-green-700 text-white"
+            className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 shadow-sm"
             disabled={selectedIocs.length === 0 || generatingQuery}
             onClick={generateHuntingQueries}
           >
-            {generatingQuery ? 'Generating...' : `Generate Hunting Queries (${selectedIocs.length})`}
+            {generatingQuery ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Generating...
+              </>
+            ) : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>
+                Generate Hunting Queries ({selectedIocs.length})
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -240,17 +263,32 @@ const IocsTab: React.FC = () => {
       {!loading && !error && (
         <>
           {iocs.length === 0 ? (
-            <p className="text-center my-10 text-muted-foreground">No IoCs found. Add some IoCs to your reports first.</p>
+            <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-muted-foreground/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-xl text-muted-foreground">No IoCs found. Add some IoCs to your reports first.</p>
+              <Button variant="outline" className="mt-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                </svg>
+                Add Reports
+              </Button>
+            </div>
           ) : (
-            <div>
-              <div className="flex justify-between items-center mb-4">
+            <div className="space-y-5">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <IocsFilter 
                   filterType={filterType} 
                   setFilterType={setFilterType} 
                   iocTypes={iocTypes} 
                 />
                 
-                <div className="px-3 py-1 rounded-full bg-muted text-sm text-muted-foreground font-medium">
+                <div className="px-3 py-1.5 rounded-full bg-muted/40 backdrop-blur-sm text-sm text-muted-foreground font-medium flex items-center gap-2 border border-border/50">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-primary" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                    <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+                  </svg>
                   {selectedIocs.length} IoCs selected
                 </div>
               </div>
