@@ -29,7 +29,6 @@ services:
       - DB_HOST=db
       - DB_PORT=5432
       - DB_NAME=osinthunt
-      - SECRET_KEY=dev-key-for-development-only
     ports:
       - "5000:5000"
     volumes:
