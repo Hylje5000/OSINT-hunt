@@ -1,7 +1,7 @@
 import React from 'react';
 import axios from 'axios';
-import './IocsTab.css';
 import { IoC, HuntingQuery } from '../types';
+import { Button } from './ui/button';
 
 // Get API URL from environment variable or use default
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -28,21 +28,20 @@ interface IocsFilterProps {
 }
 
 export const IocsFilter: React.FC<IocsFilterProps> = ({ filterType, setFilterType, iocTypes }) => (
-  <div className="iocs-controls">
-    <div className="iocs-filter">
-      <label htmlFor="type-filter">Filter by type: </label>
-      <select 
-        id="type-filter" 
-        value={filterType} 
-        onChange={(e) => setFilterType(e.target.value)}
-      >
-        {iocTypes.map(type => (
-          <option key={type} value={type}>
-            {type === 'all' ? 'All Types' : type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-          </option>
-        ))}
-      </select>
-    </div>
+  <div className="flex items-center">
+    <label htmlFor="type-filter" className="mr-2 font-medium text-muted-foreground">Filter by type: </label>
+    <select 
+      id="type-filter" 
+      value={filterType} 
+      onChange={(e) => setFilterType(e.target.value)}
+      className="px-3 py-2 rounded border border-input bg-background min-w-[180px] text-sm cursor-pointer"
+    >
+      {iocTypes.map(type => (
+        <option key={type} value={type}>
+          {type === 'all' ? 'All Types' : type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+        </option>
+      ))}
+    </select>
   </div>
 );
 
@@ -55,10 +54,14 @@ interface StatusMessageProps {
 
 export const StatusMessage: React.FC<StatusMessageProps> = ({ loading, error, showSuccessMessage }) => (
   <>
-    {loading && <p className="loading-message">Loading IoCs...</p>}
-    {error && <p className="error-message">{error}</p>}
+    {loading && <p className="text-center my-10 text-muted-foreground">Loading IoCs...</p>}
+    {error && (
+      <p className="text-destructive bg-destructive/10 p-3 rounded-md my-4 text-center">
+        {error}
+      </p>
+    )}
     {showSuccessMessage && (
-      <div className="success-message">
+      <div className="text-green-600 bg-green-100 p-3 rounded-md my-4 text-center font-medium animate-in fade-in slide-in-from-top-5 duration-300">
         ✅ Hunting queries were successfully generated and saved to the database!
       </div>
     )}
@@ -73,20 +76,24 @@ interface HuntingQueryItemProps {
 }
 
 export const HuntingQueryItem: React.FC<HuntingQueryItemProps> = ({ query, iocValue, onDelete }) => (
-  <div className="hunting-query-item" key={query.id}>
-    <div className="query-header">
-      <h5>{query.name}</h5>
-      <div className="query-actions">
-        <small className="query-date">Created: {formatDate(query.created_at)}</small>
-        <button 
-          className="delete-query-button"
+  <div className="border border-border rounded-md overflow-hidden" key={query.id}>
+    <div className="flex justify-between items-center p-3 bg-muted/50 border-b border-border">
+      <h5 className="text-sm font-medium m-0">{query.name}</h5>
+      <div className="flex items-center gap-3">
+        <small className="text-xs text-muted-foreground">Created: {formatDate(query.created_at)}</small>
+        <Button 
+          variant="destructive"
+          size="sm"
           onClick={() => onDelete(query.id, iocValue)}
+          className="h-7 px-2 py-1 text-xs"
         >
           Delete
-        </button>
+        </Button>
       </div>
     </div>
-    <pre className="query-code">{formatQueryText(query.query_text)}</pre>
+    <pre className="bg-zinc-900 text-zinc-50 p-3 m-0 overflow-x-auto text-xs leading-relaxed max-h-[300px] overflow-y-auto text-left">
+      {formatQueryText(query.query_text)}
+    </pre>
   </div>
 );
 
@@ -106,20 +113,22 @@ export const HuntingQueries: React.FC<HuntingQueriesProps> = ({
   onGenerateQuery, 
   generatingSingleQuery 
 }) => (
-  <div className="ioc-hunting-rules">
-    <div className="hunting-rules-header">
-      <h4>Hunting Queries</h4>
-      <button
-        className="generate-query-button"
+  <div className="bg-white rounded-md p-4 border border-border shadow-sm">
+    <div className="flex justify-between items-center pb-2 mb-3 border-b">
+      <h4 className="text-base font-medium m-0">Hunting Queries</h4>
+      <Button
+        variant="default"
+        size="sm"
+        className="bg-green-600 hover:bg-green-700 text-white"
         disabled={generatingSingleQuery}
         onClick={() => onGenerateQuery(ioc)}
       >
         {generatingSingleQuery ? 'Generating...' : 'Generate Query'}
-      </button>
+      </Button>
     </div>
     
     {iocQueries[ioc.value] && iocQueries[ioc.value].length > 0 ? (
-      <div className="hunting-queries-list">
+      <div className="flex flex-col gap-4">
         {iocQueries[ioc.value].map(query => (
           <HuntingQueryItem 
             key={query.id}
@@ -130,7 +139,7 @@ export const HuntingQueries: React.FC<HuntingQueriesProps> = ({
         ))}
       </div>
     ) : (
-      <p className="no-queries-message">
+      <p className="text-center italic text-muted-foreground py-4 px-2 bg-muted/20 rounded-md">
         No hunting queries found for this IoC. Click "Generate Query" to create one.
       </p>
     )}
@@ -153,9 +162,9 @@ export const IocDetails: React.FC<IocDetailsProps> = ({
   onGenerateQuery, 
   generatingSingleQuery 
 }) => (
-  <tr className="details-row">
+  <tr className="bg-muted/30">
     <td colSpan={5}>
-      <div className="ioc-details">
+      <div className="p-4">
         <HuntingQueries 
           ioc={ioc}
           iocQueries={iocQueries}
@@ -193,30 +202,33 @@ export const IocsTableRow: React.FC<IocsTableRowProps> = ({
   generatingSingleQuery
 }) => (
   <React.Fragment>
-    <tr className={expandedIoc === ioc.value ? 'expanded' : ''}>
-      <td className="checkbox-column">
+    <tr className={`border-b border-border hover:bg-muted/30 transition-colors ${expandedIoc === ioc.value ? 'bg-muted/20' : ''}`}>
+      <td className="w-10 text-center p-3">
         <input 
           type="checkbox"
+          className="h-4 w-4"
           checked={selectedIocs.some(selected => selected.value === ioc.value)}
           onChange={() => toggleIocSelection(ioc)}
         />
       </td>
-      <td className="ioc-value">{ioc.value}</td>
-      <td className="ioc-type">
-        <span className="type-badge">
+      <td className="p-3 font-mono font-medium">{ioc.value}</td>
+      <td className="p-3">
+        <span className="inline-block px-2 py-1 rounded text-xs font-medium bg-primary text-primary-foreground">
           {(ioc as any).type_name || ioc.type}
         </span>
       </td>
-      <td className="ioc-description">
-        {ioc.description || <span className="no-desc">No description</span>}
+      <td className="p-3 text-sm">
+        {ioc.description || <span className="italic text-muted-foreground">No description</span>}
       </td>
-      <td className="ioc-actions">
-        <button 
-          className="detail-button"
+      <td className="p-3 text-right">
+        <Button 
+          variant="outline"
+          size="sm"
           onClick={() => toggleExpand(ioc.value)}
+          className="text-primary"
         >
           {expandedIoc === ioc.value ? 'Hide Details' : 'Show Details'}
-        </button>
+        </Button>
       </td>
     </tr>
     {expandedIoc === ioc.value && (
@@ -259,21 +271,22 @@ export const IocsTable: React.FC<IocsTableProps> = ({
   onGenerateQuery,
   generatingSingleQuery
 }) => (
-  <div className="table-responsive">
-    <table className="iocs-table">
-      <thead>
+  <div className="overflow-x-auto rounded-lg border border-border shadow-sm">
+    <table className="w-full border-collapse bg-card text-card-foreground">
+      <thead className="bg-primary text-primary-foreground">
         <tr>
-          <th className="checkbox-column">
+          <th className="w-10 text-center p-3">
             <input 
               type="checkbox"
+              className="h-4 w-4"
               checked={allFilteredSelected}
               onChange={toggleSelectAll}
             />
           </th>
-          <th>Value</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Actions</th>
+          <th className="p-3 text-left font-medium text-sm">Value</th>
+          <th className="p-3 text-left font-medium text-sm">Type</th>
+          <th className="p-3 text-left font-medium text-sm">Description</th>
+          <th className="p-3 text-right font-medium text-sm">Actions</th>
         </tr>
       </thead>
       <tbody>

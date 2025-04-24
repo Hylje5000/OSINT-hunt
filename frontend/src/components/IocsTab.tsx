@@ -6,8 +6,8 @@ import {
   IocsTable,
   fetchIocQueries
 } from './IocComponents';
-import './IocsTab.css';
 import { IoC, HuntingQuery, Report } from '../types';
+import { Button } from './ui/button';
 
 // Get API URL from environment variable or use default
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -217,17 +217,17 @@ const IocsTab: React.FC = () => {
     filteredIocs.every(ioc => selectedIocs.some(selected => selected.value === ioc.value));
 
   return (
-    <div className="iocs-tab">
-      <div className="iocs-header">
-        <h2>Indicators of Compromise (IoCs)</h2>
-        <div className="iocs-actions">
-          <button 
-            className="generate-button"
+    <div className="p-5">
+      <div className="flex justify-between items-center mb-5">
+        <h2 className="text-xl font-semibold text-foreground m-0">Indicators of Compromise (IoCs)</h2>
+        <div className="ml-4">
+          <Button 
+            className="bg-green-600 hover:bg-green-700 text-white"
             disabled={selectedIocs.length === 0 || generatingQuery}
             onClick={generateHuntingQueries}
           >
             {generatingQuery ? 'Generating...' : `Generate Hunting Queries (${selectedIocs.length})`}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -240,17 +240,17 @@ const IocsTab: React.FC = () => {
       {!loading && !error && (
         <>
           {iocs.length === 0 ? (
-            <p className="no-iocs-message">No IoCs found. Add some IoCs to your reports first.</p>
+            <p className="text-center my-10 text-muted-foreground">No IoCs found. Add some IoCs to your reports first.</p>
           ) : (
-            <div className="iocs-container">
-              <div className="iocs-controls">
+            <div>
+              <div className="flex justify-between items-center mb-4">
                 <IocsFilter 
                   filterType={filterType} 
                   setFilterType={setFilterType} 
                   iocTypes={iocTypes} 
                 />
                 
-                <div className="selected-count">
+                <div className="px-3 py-1 rounded-full bg-muted text-sm text-muted-foreground font-medium">
                   {selectedIocs.length} IoCs selected
                 </div>
               </div>
