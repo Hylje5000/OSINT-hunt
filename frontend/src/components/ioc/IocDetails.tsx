@@ -4,11 +4,11 @@ import { HuntingQueries } from './HuntingQueries';
 
 interface IocDetailsProps {
   ioc: IoC;
-  iocQueries: Record<string, HuntingQuery[]>;
-  onDeleteQuery: (queryId: number, iocValue: string) => void;
+  iocQueries: Record<number, HuntingQuery[]>;
+  onDeleteQuery: (queryId: number, iocId: number) => void;
   onGenerateQuery: (ioc: IoC) => void;
   generatingSingleQuery: boolean;
-  hasQuery: boolean; // New prop
+  hasQuery: boolean;
 }
 
 export const IocDetails: React.FC<IocDetailsProps> = ({ 

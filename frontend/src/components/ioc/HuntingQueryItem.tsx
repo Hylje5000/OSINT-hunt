@@ -5,11 +5,11 @@ import { formatQueryText, formatDate } from './utils';
 
 interface HuntingQueryItemProps {
   query: HuntingQuery;
-  iocValue: string;
-  onDelete: (queryId: number, iocValue: string) => void;
+  iocId: number;
+  onDelete: (queryId: number, iocId: number) => void;
 }
 
-export const HuntingQueryItem: React.FC<HuntingQueryItemProps> = ({ query, iocValue, onDelete }) => (
+export const HuntingQueryItem: React.FC<HuntingQueryItemProps> = ({ query, iocId, onDelete }) => (
   <div className="border border-border/50 rounded-md overflow-hidden glass-card card-hover" key={query.id}>
     <div className="flex justify-between items-center p-3 bg-muted/40 backdrop-blur-sm border-b border-border/50">
       <h5 className="text-sm font-medium m-0 flex items-center gap-2">
@@ -23,7 +23,7 @@ export const HuntingQueryItem: React.FC<HuntingQueryItemProps> = ({ query, iocVa
         <Button 
           variant="destructive"
           size="sm"
-          onClick={() => onDelete(query.id, iocValue)}
+          onClick={() => onDelete(query.id, iocId)}
           className="h-7 px-2 py-1 text-xs"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">

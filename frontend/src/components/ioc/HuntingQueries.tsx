@@ -5,8 +5,8 @@ import { HuntingQueryItem } from './HuntingQueryItem';
 
 interface HuntingQueriesProps {
   ioc: IoC;
-  iocQueries: Record<string, HuntingQuery[]>;
-  onDelete: (queryId: number, iocValue: string) => void;
+  iocQueries: Record<number, HuntingQuery[]>;
+  onDelete: (queryId: number, iocId: number) => void;
   onGenerateQuery: (ioc: IoC) => void;
   generatingSingleQuery: boolean;
   hasQuery: boolean;
@@ -59,13 +59,13 @@ export const HuntingQueries: React.FC<HuntingQueriesProps> = ({
       )}
     </div>
     
-    {iocQueries[ioc.value] && iocQueries[ioc.value].length > 0 ? (
+    {iocQueries[ioc.id] && iocQueries[ioc.id].length > 0 ? (
       <div className="flex flex-col gap-4">
-        {iocQueries[ioc.value].map(query => (
+        {iocQueries[ioc.id].map(query => (
           <HuntingQueryItem 
             key={query.id}
             query={query} 
-            iocValue={ioc.value} 
+            iocId={ioc.id} 
             onDelete={onDelete} 
           />
         ))}

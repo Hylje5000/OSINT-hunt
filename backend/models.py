@@ -14,33 +14,54 @@ class BaseModel(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-# Example model - you can modify or create additional models as needed
-class Item(BaseModel):
-    __tablename__ = 'items'
+# IoC model for storing individual Indicators of Compromise
+class IoC(BaseModel):
+    __tablename__ = 'iocs'
     
-    name = db.Column(db.String(100), nullable=False)
+    value = db.Column(db.String(255), nullable=False, index=True)
+    type = db.Column(db.String(50), nullable=False, index=True)  # ip, domain, hash, etc.
     description = db.Column(db.Text, nullable=True)
+    source = db.Column(db.String(255), nullable=True)
+    confidence = db.Column(db.Integer, nullable=True)  # Optional confidence score
+    
+    # Relationship with HuntingQueries
+    hunting_queries = db.relationship('HuntingQuery', backref='ioc', lazy='dynamic')
     
     def __repr__(self):
-        return f'<Item {self.name}>'
+        return f'<IoC {self.type}:{self.value}>'
     
     def to_dict(self):
         return {
             'id': self.id,
-            'name': self.name,
+            'value': self.value,
+            'type': self.type,
             'description': self.description,
+            'source': self.source,
+            'confidence': self.confidence,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
+    
+    @classmethod
+    def find_by_value(cls, value):
+        """Find IoC by its value"""
+        return cls.query.filter_by(value=value).first()
+    
+    @classmethod
+    def find_by_type(cls, ioc_type):
+        """Find IoCs by their type"""
+        return cls.query.filter_by(type=ioc_type).all()
 
-# Report model for storing threat intelligence reports
+# Report model for storing threat intelligence reports (not currently used)
 class Report(BaseModel):
     __tablename__ = 'reports'
     
     name = db.Column(db.String(255), nullable=False)
     source = db.Column(db.String(255), nullable=True)  # Source/creator of the report
-    iocs = db.Column(db.JSON, nullable=True)  # List of IOCs stored as JSON
     sigma_rule = db.Column(db.Text, nullable=True)  # Sigma rule as text
+    
+    # Add a relationship to IoCs
+    iocs = db.relationship('IoC', secondary='report_iocs', backref=db.backref('reports', lazy='dynamic'))
     
     def __repr__(self):
         return f'<Report {self.name}>'
@@ -50,108 +71,41 @@ class Report(BaseModel):
             'id': self.id,
             'name': self.name,
             'source': self.source,
-            'iocs': self.iocs,
             'sigma_rule': self.sigma_rule,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
     
-    # Helper methods for IOCs list
-    def set_iocs(self, iocs_list):
-        """Set IOCs from a Python list"""
-        self.iocs = iocs_list
-    
-    def get_iocs(self):
-        """Get IOCs as a Python list"""
-        return self.iocs if self.iocs else []
-    
-    def add_ioc(self, ioc_data: Dict[str, Any]) -> bool:
-        """
-        Add a single IoC to the report if it doesn't already exist.
+    def set_iocs(self, iocs_data):
+        """Add IoCs to this report
         
         Args:
-            ioc_data: Dictionary containing IoC data (type, value, description)
-            
-        Returns:
-            Boolean indicating if the IoC was added (True) or already existed (False)
+            iocs_data: List of IoC data dictionaries with type, value, and optional description
         """
-        current_iocs = self.get_iocs()
-        
-        # Check if this IoC already exists in the report
-        for existing_ioc in current_iocs:
-            if (existing_ioc.get('type') == ioc_data.get('type') and 
-                existing_ioc.get('value') == ioc_data.get('value')):
-                return False  # IoC already exists
-        
-        # Add the new IoC and update the report
-        current_iocs.append(ioc_data)
-        self.set_iocs(current_iocs)
-        return True  # IoC was added
-    
-    def add_iocs_batch(self, iocs_data: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
-        """
-        Add multiple IoCs to the report, skipping any that already exist.
-        
-        Args:
-            iocs_data: List of dictionaries containing IoC data (type, value, description)
-            
-        Returns:
-            Dictionary with lists of added and skipped IoCs
-        """
-        added_iocs = []
-        skipped_iocs = []
-        
         for ioc_data in iocs_data:
-            was_added = self.add_ioc(ioc_data)
-            if was_added:
-                added_iocs.append(ioc_data)
-            else:
-                skipped_iocs.append(ioc_data)
+            ioc = IoC.query.filter_by(value=ioc_data['value'], type=ioc_data['type']).first()
+            
+            if not ioc:
+                # Create new IoC if it doesn't exist
+                ioc = IoC(
+                    value=ioc_data['value'],
+                    type=ioc_data['type'],
+                    description=ioc_data.get('description')
+                )
+                db.session.add(ioc)
+            
+            # Add to this report if not already associated
+            if ioc not in self.iocs:
+                self.iocs.append(ioc)
         
-        return {
-            'added': added_iocs,
-            'skipped': skipped_iocs
-        }
+        db.session.commit()
+        return self.iocs
 
-    @classmethod
-    def find_duplicate_iocs(cls, iocs_data: List[Dict[str, Any]]) -> Dict[str, List[Dict]]:
-        """
-        Find IoCs that already exist in any report in the database.
-        
-        Args:
-            iocs_data: List of dictionaries containing IoC data (type, value, description)
-            
-        Returns:
-            Dictionary with lists of duplicate IoCs and the reports they appear in
-        """
-        # This is a simple implementation - for large datasets, 
-        # you might want to optimize with direct SQL queries
-        results = {'duplicates': []}
-        all_reports = cls.query.all()
-        
-        for ioc_data in iocs_data:
-            ioc_type = ioc_data.get('type')
-            ioc_value = ioc_data.get('value')
-            
-            duplicates = []
-            for report in all_reports:
-                for existing_ioc in report.get_iocs():
-                    if (existing_ioc.get('type') == ioc_type and 
-                        existing_ioc.get('value') == ioc_value):
-                        duplicates.append({
-                            'report_id': report.id,
-                            'report_name': report.name,
-                            'ioc': existing_ioc
-                        })
-            
-            if duplicates:
-                results['duplicates'].append({
-                    'ioc': ioc_data,
-                    'found_in': duplicates
-                })
-                
-        return results
-
+# Association table for Report-IoC many-to-many relationship
+report_iocs = db.Table('report_iocs',
+    db.Column('report_id', db.Integer, db.ForeignKey('reports.id'), primary_key=True),
+    db.Column('ioc_id', db.Integer, db.ForeignKey('iocs.id'), primary_key=True)
+)
 
 # Hunting Query model for storing generated KQL queries
 class HuntingQuery(BaseModel):
@@ -161,10 +115,16 @@ class HuntingQuery(BaseModel):
     description = db.Column(db.Text, nullable=True)
     query_type = db.Column(db.String(50), nullable=False)  # e.g., 'kql', 'sigma', etc.
     query_text = db.Column(db.Text, nullable=False)  # The actual query content
-    iocs = db.Column(db.JSON, nullable=True)  # List of IoCs used to generate this query
-    ioc_value = db.Column(db.String(255), nullable=True)  # The specific IoC value this query is for
-    ioc_type = db.Column(db.String(50), nullable=True)  # The type of the IoC
-    report_id = db.Column(db.Integer, db.ForeignKey('reports.id'), nullable=True)  # Optional link to a report
+    
+    # Foreign key to IoC model
+    ioc_id = db.Column(db.Integer, db.ForeignKey('iocs.id'), nullable=False)
+    
+    # Foreign key to Report model (optional)
+    report_id = db.Column(db.Integer, db.ForeignKey('reports.id'), nullable=True)
+    
+    # Store IoC value and type directly for easier access and testing
+    ioc_value = db.Column(db.String(255), nullable=True)
+    ioc_type = db.Column(db.String(50), nullable=True)
     
     def __repr__(self):
         return f'<HuntingQuery {self.name}>'
@@ -176,7 +136,7 @@ class HuntingQuery(BaseModel):
             'description': self.description,
             'query_type': self.query_type,
             'query_text': self.query_text,
-            'iocs': self.iocs,
+            'ioc_id': self.ioc_id,
             'ioc_value': self.ioc_value,
             'ioc_type': self.ioc_type,
             'report_id': self.report_id,
@@ -185,6 +145,11 @@ class HuntingQuery(BaseModel):
         }
     
     @classmethod
-    def find_by_ioc_value(cls, ioc_value):
+    def find_by_ioc_id(cls, ioc_id):
+        """Find hunting queries by IoC ID"""
+        return cls.query.filter_by(ioc_id=ioc_id).all()
+        
+    @classmethod
+    def find_by_ioc_value(cls, value):
         """Find hunting queries by IoC value"""
-        return cls.query.filter_by(ioc_value=ioc_value).all()
+        return cls.query.filter_by(ioc_value=value).all()

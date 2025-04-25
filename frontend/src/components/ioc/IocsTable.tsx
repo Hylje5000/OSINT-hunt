@@ -4,17 +4,18 @@ import { IocsTableRow } from './IocsTableRow';
 
 interface IocsTableProps {
   filteredIocs: IoC[];
-  expandedIoc: string | null;
-  toggleExpand: (iocValue: string) => void;
+  expandedIoc: number | null;
+  toggleExpand: (iocId: number) => void;
   selectedIocs: IoC[];
   toggleIocSelection: (ioc: IoC) => void;
   allFilteredSelected: boolean;
   toggleSelectAll: () => void;
-  iocQueries: Record<string, HuntingQuery[]>;
-  onDeleteQuery: (queryId: number, iocValue: string) => void;
+  iocQueries: Record<number, HuntingQuery[]>;
+  onDeleteQuery: (queryId: number, iocId: number) => void;
   onGenerateQuery: (ioc: IoC) => void;
+  onDeleteIoc?: (ioc: IoC) => void;
   generatingSingleQuery: boolean;
-  iocsWithoutQueries: Set<string>; // New prop
+  iocsWithoutQueries: Set<number>;
 }
 
 export const IocsTable: React.FC<IocsTableProps> = ({ 
@@ -28,6 +29,7 @@ export const IocsTable: React.FC<IocsTableProps> = ({
   iocQueries,
   onDeleteQuery,
   onGenerateQuery,
+  onDeleteIoc,
   generatingSingleQuery,
   iocsWithoutQueries
 }) => (
@@ -51,9 +53,9 @@ export const IocsTable: React.FC<IocsTableProps> = ({
           </tr>
         </thead>
         <tbody>
-          {filteredIocs.map((ioc, index) => (
+          {filteredIocs.map((ioc) => (
             <IocsTableRow 
-              key={index}
+              key={ioc.id}
               ioc={ioc}
               expandedIoc={expandedIoc}
               toggleExpand={toggleExpand}
@@ -62,8 +64,9 @@ export const IocsTable: React.FC<IocsTableProps> = ({
               iocQueries={iocQueries}
               onDeleteQuery={onDeleteQuery}
               onGenerateQuery={onGenerateQuery}
+              onDeleteIoc={onDeleteIoc}
               generatingSingleQuery={generatingSingleQuery}
-              hasQuery={!iocsWithoutQueries.has(ioc.value)}
+              hasQuery={!iocsWithoutQueries.has(ioc.id)}
             />
           ))}
         </tbody>

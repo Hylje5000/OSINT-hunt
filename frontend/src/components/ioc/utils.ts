@@ -4,6 +4,38 @@ import { HuntingQuery } from '../../types';
 // Get API URL from environment variable or use default
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
+// Mapping of backend IoC types to human-readable display names
+export const IOC_TYPE_DISPLAY_NAMES: Record<string, string> = {
+  'HASH_MD5': 'MD5 Hash',
+  'HASH_SHA1': 'SHA1 Hash',
+  'HASH_SHA256': 'SHA256 Hash',
+  'IP_ADDRESS': 'IP Address',
+  'DOMAIN': 'Domain Name',
+  'URL': 'URL',
+  'EMAIL': 'Email Address',
+  'REGISTRY_KEY': 'Registry Key',
+  'UNKNOWN': 'Unknown'
+};
+
+// Convert IoC type to human-readable display name
+export const getIocTypeDisplayName = (type: string): string => {
+  // Check if the type exists in our mapping
+  if (type && IOC_TYPE_DISPLAY_NAMES[type]) {
+    return IOC_TYPE_DISPLAY_NAMES[type];
+  }
+  
+  // Fallback for unknown types - convert from snake_case or SCREAMING_SNAKE_CASE to Title Case
+  if (type) {
+    return type
+      .toLowerCase()
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
+  
+  return 'Unknown';
+};
+
 // Format hunting query to properly display line breaks
 export const formatQueryText = (queryText: string): string => {
   if (!queryText) return '';
