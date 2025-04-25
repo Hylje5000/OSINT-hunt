@@ -41,7 +41,7 @@ IOC_TYPE_NAMES = {
     IoC_Type.HASH_SHA1: "SHA1 Hash",
     IoC_Type.HASH_SHA256: "SHA256 Hash",
     IoC_Type.IP_ADDRESS: "IP Address",
-    IoC_Type.DOMAIN: "Domain Name",
+    IoC_Type.DOMAIN: "Domain",
     IoC_Type.URL: "URL",
     IoC_Type.EMAIL: "Email Address",
     IoC_Type.REGISTRY_KEY: "Registry Key",

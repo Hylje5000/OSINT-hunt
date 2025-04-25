@@ -10,7 +10,7 @@ export const IOC_TYPE_DISPLAY_NAMES: Record<string, string> = {
   'HASH_SHA1': 'SHA1 Hash',
   'HASH_SHA256': 'SHA256 Hash',
   'IP_ADDRESS': 'IP Address',
-  'DOMAIN': 'Domain Name',
+  'DOMAIN': 'Domain',
   'URL': 'URL',
   'EMAIL': 'Email Address',
   'REGISTRY_KEY': 'Registry Key',
