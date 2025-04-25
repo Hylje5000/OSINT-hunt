@@ -7,13 +7,11 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
     """Base configuration class"""
-    # Security
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-key-for-development-only'
     
     # SQLAlchemy
     DB_USERNAME = os.environ.get('DB_USERNAME', 'miska')
     DB_PASSWORD = os.environ.get('DB_KEY', 'postgres')
-    DB_HOST = os.environ.get('DB_HOST', 'db')  # Changed to 'db' for Docker service name
+    DB_HOST = os.environ.get('DB_HOST', 'db')
     DB_PORT = os.environ.get('DB_PORT', '5432')
     DB_NAME = os.environ.get('DB_NAME', 'osinthunt')
     
