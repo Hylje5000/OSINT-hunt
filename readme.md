@@ -68,13 +68,7 @@ OSINT-Hunt is a web-based platform designed to help security analysts and threat
    pip install -r requirements.txt
    ```
 
-4. Set up environment variables:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
-
-5. Run the Flask application:
+4. Run the Flask application:
    ```bash
    flask run
    ```
@@ -103,7 +97,7 @@ OSINT-Hunt is a web-based platform designed to help security analysts and threat
 1. Add IoCs through the reports interface
 2. View and manage all IoCs in the IoCs tab
 3. Generate hunting queries for selected IoCs
-4. Copy and use the generated queries in your SIEM or EDR platform
+4. Copy and use the generated queries in your SIEM or EDR platform (Integration TODO)
 
 ### Example Queries
 
@@ -151,13 +145,3 @@ npm test
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- [MITRE ATT&CK](https://attack.mitre.org/) for cyber threat intelligence
-- [Sigma](https://github.com/SigmaHQ/sigma) for detection rule format
-- All open-source libraries and tools used in this project
-
----
-
-Made with ❤️ by [Your Name]
