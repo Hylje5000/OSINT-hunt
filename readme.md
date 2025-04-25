@@ -7,15 +7,9 @@ A comprehensive platform for collecting, analyzing, and generating hunting queri
 
 ## Overview
 
-OSINT-Hunt is a web-based platform designed to help security analysts and threat hunters manage Indicators of Compromise (IoCs) from various intelligence sources, automatically generate Kusto Query Language (KQL) hunting queries, and streamline the threat hunting process.
+OSINT-Hunt is a web-based platform designed to help security analysts and threat hunters manage Indicators of Compromise (IoCs) from various intelligence sources, automatically generate Kusto Query Language (KQL) hunting queries, and streamline the threat hunting process.  
+**heavily vibe-coded, sue me**
 
-## Features
-
-- **IoC Management**: Collect and organize indicators from multiple sources
-- **Defanging/Refanging**: Automatically handle defanged IoCs for safe storage and display
-- **Hunting Query Generation**: Automatically create KQL queries for detected IoCs
-- **Report Management**: Create and organize threat intelligence reports
-- **Sigma Rule Support**: Import and export Sigma detection rules
 
 ## Technology Stack
 
@@ -49,7 +43,7 @@ OSINT-Hunt is a web-based platform designed to help security analysts and threat
 
 2. Start the application using Docker Compose:
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
 3. Access the application at http://localhost:3000
