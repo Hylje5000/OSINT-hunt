@@ -8,6 +8,7 @@ A comprehensive platform for collecting, analyzing, and generating hunting queri
 ## Overview
 
 OSINT-Hunt is a web-based platform designed to help security analysts and threat hunters manage Indicators of Compromise (IoCs) from various intelligence sources, automatically generate Kusto Query Language (KQL) hunting queries, and streamline the threat hunting process.  
+
 **heavily vibe-coded, sue me**
 
 
